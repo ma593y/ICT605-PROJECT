@@ -19,7 +19,7 @@ df.columns = [
 
 # Display rows with any missing values
 missing_values_df = df[df.isna().any(axis=1)]
-print(missing_values_df)
+# print(missing_values_df)
 
 # Count the records before dropping missing values
 initial_count = len(df)
@@ -34,6 +34,11 @@ df = df.dropna()
 # Count the records after dropping missing values
 final_count = len(df)
 print(f"Record count after dropping missing values: {final_count}")
+
+df = df.drop(columns=['TableId', 'RouteId'])
+
+# Create a new "Route" column by combining "OriginAirportCode" and "DestinationAirportCode"
+df['Route'] = df['OriginAirportCode'] + '-' + df['DestinationAirportCode']
 
 # print(json.dumps(list(df.columns), indent=4))
 
