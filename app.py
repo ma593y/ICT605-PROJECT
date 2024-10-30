@@ -53,11 +53,6 @@ home_layout = html.Div([
         html.H2("FAQs / Help", className="my-3", style={"color": "#457b9d"}),
         html.P("For questions, refer to our FAQ section for guidance and troubleshooting tips."),
     ]),
-
-    # Navigation Link to Graphs
-    html.Div([
-        dbc.Button("View Graphs", href="/graphs", color="primary", className="mr-2"),
-    ], className="text-center my-4")
 ])
 
 # Layout for Graphs Page
@@ -218,6 +213,84 @@ top_10_layout = html.Div([
     ])
 ])
 
+# Trend Graph Definitions
+def create_trend_figures(df):
+    figures = []
+
+    # Passenger Count by Year with Average Line
+    passenger_count_by_year = df.groupby('Year')['PassengerCount'].sum().reset_index()
+    average_count = passenger_count_by_year['PassengerCount'].mean()
+    fig1 = px.line(passenger_count_by_year, x='Year', y='PassengerCount', title="Passengers Trend Over Years")
+    fig1.update_traces(mode='lines+markers', line=dict(color='gray'))
+    fig1.add_shape(type="line", x0=passenger_count_by_year['Year'].min(), x1=passenger_count_by_year['Year'].max(),
+                   y0=average_count, y1=average_count, line=dict(dash="dash", color="red"))
+    fig1.add_annotation(x=passenger_count_by_year['Year'].max(), y=average_count, text=f"Avg: {average_count:.0f}", showarrow=False)
+    fig1.update_layout(title_font_size=20, xaxis_title="Year", yaxis_title="Passenger Count (Log Scale)", yaxis_type="log")
+    figures.append(fig1)
+
+    # Passenger Count Trends by Distance Category
+    df['DistanceCategory'] = pd.cut(df['RouteDistanceInMiles'], bins=[0, 500, 1500, 3000], labels=['Short', 'Medium', 'Long'])
+    trend_data = df.groupby(['Year', 'DistanceCategory'])['PassengerCount'].sum().reset_index()
+    distance_colors = {"Short": "dodgerblue", "Medium": "orange", "Long": "green"}
+    fig2 = px.line(trend_data, x='Year', y='PassengerCount', color='DistanceCategory',
+                   title="Passenger Count Trends by Route Distance Category Over Time",
+                   line_shape='spline', markers=True, color_discrete_map=distance_colors)
+    figures.append(fig2)
+
+    # Yearly Trend of Passenger Count with Annotations
+    passenger_trend = df.groupby('Year')['PassengerCount'].sum().reset_index()
+    fig3 = px.line(passenger_trend, x='Year', y='PassengerCount', title="Yearly Trend of Passenger Count",
+                   line_shape='spline', markers=True)
+    peak_year = passenger_trend.loc[passenger_trend['PassengerCount'].idxmax()]
+    low_year = passenger_trend.loc[passenger_trend['PassengerCount'].idxmin()]
+    fig3.add_annotation(x=peak_year['Year'], y=peak_year['PassengerCount'], text="Peak", showarrow=True, arrowhead=2)
+    fig3.add_annotation(x=low_year['Year'], y=low_year['PassengerCount'], text="Lowest", showarrow=True, arrowhead=2)
+    figures.append(fig3)
+
+    # Yearly Trend of Average Fare with Annotations
+    fare_trend = df.groupby('Year')['AverageFare'].mean().reset_index()
+    fig4 = px.line(fare_trend, x='Year', y='AverageFare', title="Yearly Trend of Average Fare",
+                   line_shape='spline', markers=True, color_discrete_sequence=['indianred'])
+    peak_fare = fare_trend.loc[fare_trend['AverageFare'].idxmax()]
+    low_fare = fare_trend.loc[fare_trend['AverageFare'].idxmin()]
+    fig4.add_annotation(x=peak_fare['Year'], y=peak_fare['AverageFare'], text="Highest Fare", showarrow=True, arrowhead=2)
+    fig4.add_annotation(x=low_fare['Year'], y=low_fare['AverageFare'], text="Lowest Fare", showarrow=True, arrowhead=2)
+    figures.append(fig4)
+
+    # Passenger Count Trends by Quarter
+    quarterly_trends = df.groupby(['Year', 'Quarter']).agg({'PassengerCount': 'sum', 'AverageFare': 'mean'}).reset_index()
+    quarterly_trends['Quarter'] = "Q" + quarterly_trends['Quarter'].astype(str)
+    quarter_colors = {"Q1": "royalblue", "Q2": "orange", "Q3": "green", "Q4": "red"}
+    fig5 = px.line(quarterly_trends, x='Year', y='PassengerCount', color='Quarter',
+                   title="Passenger Count Trends by Quarter Over Time",
+                   color_discrete_map=quarter_colors, line_shape="linear")
+    figures.append(fig5)
+
+    # Average Fare Trends by Quarter
+    fig6 = px.line(quarterly_trends, x='Year', y='AverageFare', color='Quarter',
+                   title="Average Fare Trends by Quarter Over Time",
+                   color_discrete_map=quarter_colors, line_shape="linear")
+    figures.append(fig6)
+
+    return figures
+
+# Generate trend figures
+trend_figures = create_trend_figures(df)
+
+# Layout for Trend Analysis Page
+trend_layout = html.Div([
+    html.H1("Trend Analysis", className="text-center my-4", style={"color": "#1d3557"}),
+
+    dbc.Container([
+        dbc.Row(
+            [
+                dbc.Col([dcc.Graph(figure=fig), html.Hr(style={"border-top": "5px solid #ddd"})], md=12) for fig in trend_figures
+            ],
+            className="g-4"
+        )
+    ])
+])
+
 # App Layout with Navigation
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
@@ -228,6 +301,7 @@ app.layout = html.Div([
             dbc.NavItem(dbc.NavLink("Home", href="/")),
             dbc.NavItem(dbc.NavLink("Data Summary", href="/data-summary")),
             dbc.NavItem(dbc.NavLink("Top 10 Graphs", href="/top-10")),
+            dbc.NavItem(dbc.NavLink("Trend Analysis", href="/trend-analysis")),
             dbc.NavItem(dbc.NavLink("Graphs", href="/graphs")),
         ],
         brand="Data Analysis Dashboard",
@@ -250,6 +324,8 @@ def display_page(pathname):
         return data_summary_layout
     elif pathname == "/top-10":
         return top_10_layout
+    elif pathname == "/trend-analysis":
+        return trend_layout
     else:
         return home_layout
 
