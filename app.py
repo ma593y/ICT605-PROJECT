@@ -55,22 +55,524 @@ home_layout = html.Div([
     ]),
 ])
 
-# Layout for Graphs Page
-graphs_layout = html.Div([
-    html.H1("Data Visualizations", className="text-center my-4", style={"color": "#1d3557"}),
+########################################################################################
+
+import dash_daq as daq
+
+# Load the data
+df_graphs = pd.read_parquet("datasets/_dataset_graphs.parquet")
+
+# Split 'Geocoded_City1' into 'start_lat' and 'start_lon'
+df_graphs[["start_lat", "start_lon"]] = df_graphs["Geocoded_City1"].str.split(", ", expand=True)
+
+# Split 'Geocoded_City2' into 'end_lat' and 'end_lon'
+df_graphs[["end_lat", "end_lon"]] = df_graphs["Geocoded_City2"].str.split(", ", expand=True)
+
+# Convert the latitude and longitude columns to numeric
+df_graphs["start_lat"] = pd.to_numeric(df_graphs["start_lat"])
+df_graphs["start_lon"] = pd.to_numeric(df_graphs["start_lon"])
+df_graphs["end_lat"] = pd.to_numeric(df_graphs["end_lat"])
+df_graphs["end_lon"] = pd.to_numeric(df_graphs["end_lon"])
+
+
+# Remove "Metropolitan Area" from city names
+def remove_metropolitan(route):
+    return route.replace("(Metropolitan Area)", "").strip()
+
+df_graphs["city1"] = df_graphs["city1"].apply(remove_metropolitan)
+df_graphs["city2"] = df_graphs["city2"].apply(remove_metropolitan)
+
+# Create a new column for the route to make selection easier
+df_graphs["route"] = df_graphs["city1"] + " - " + df_graphs["city2"]
+
+# Define the layout of the app
+graphs_layout = html.Div(
+    [
+        html.H1("US Airline Dashboard", id="header"),
+        html.Div(
+            [
+                html.Div(
+                    dcc.Dropdown(
+                        id="year-dropdown",
+                        options=sorted(
+                            [
+                                {"label": year, "value": year}
+                                for year in df_graphs["Year"].unique()
+                            ],
+                            key=lambda x: x["value"],
+                        ),
+                        placeholder="Select a year",
+                        multi=True,
+                    ),
+                    style={
+                        "width": "32%",
+                        "display": "inline-block",
+                        "margin-right": "2%",
+                        "vertical-align": "top",
+                    },
+                ),
+                html.Div(
+                    dcc.Dropdown(
+                        id="source-city-dropdown",
+                        options=sorted(
+                            [
+                                {"label": source, "value": source}
+                                for source in df_graphs["city1"].unique()
+                            ],
+                            key=lambda x: x["label"],
+                        ),
+                        placeholder="Select a source city",
+                        multi=True,
+                    ),
+                    style={
+                        "width": "32%",
+                        "display": "inline-block",
+                        "margin-right": "2%",
+                        "vertical-align": "top",
+                    },
+                ),
+                html.Div(
+                    dcc.Dropdown(
+                        id="destination-city-dropdown",
+                        options=sorted(
+                            [
+                                {"label": destination, "value": destination}
+                                for destination in df_graphs["city2"].unique()
+                            ],
+                            key=lambda x: x["label"],
+                        ),
+                        placeholder="Select a destination city",
+                        multi=True,
+                    ),
+                    style={
+                        "width": "32%",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                    },
+                ),
+            ],
+            style={
+                "display": "flex",
+                "flex-wrap": "wrap",
+                "bgcolor": "rgba(150, 150, 150, 0.5)",
+            },
+        ),
+        html.Br(),
+        # Div for Route Map and Box Plot
+        html.Div(
+            [
+                # Dive For Route Map & Dropdown
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.Div(
+                                    # Text for the button
+                                    "Source City & Routes   ",
+                                ),
+                                # Button for source city
+                                daq.BooleanSwitch(
+                                    id="source-dest-btn",
+                                    on=False,
+                                ),
+                                html.Div(
+                                    # Text for the button
+                                    "   Destination City",
+                                ),
+                            ],
+                            style={
+                                "width": "100%",
+                                "height": "33px",
+                                "display": "flex",
+                                "justify-content": "center",
+                                "align-items": "center",
+                                "border": "1px solid #D3D3D3",  # Border color and thickness
+                                "border-radius": "4px",  # Rounded corners
+                                "font-color": "lightgrey",
+                            },
+                        ),
+                        html.Br(),
+                        dcc.Graph(
+                            id="route-map", style={"height": "70vh", "width": "100%"}
+                        ),
+                    ],
+                    style={
+                        "width": "49%",
+                        "display": "inline-block",
+                        "margin-right": "2%",
+                        "vertical-align": "top",
+                    },
+                ),
+                # Dive For Box Plot & Dropdown
+                html.Div(
+                    [
+                        # Dropdown for Box Plot selection
+                        html.Div(
+                            dcc.Dropdown(
+                                id="route-dropdown",
+                                options=[
+                                    {"label": route, "value": route}
+                                    for route in df_graphs["route"].unique()
+                                ],
+                                placeholder="Select routes for box plot",
+                                multi=True,
+                            ),
+                            style={
+                                "width": "100%",
+                            },
+                        ),
+                        html.Br(),
+                        # Box Plot
+                        dcc.Graph(
+                            id="box-plot", style={"height": "70vh", "width": "100%"}
+                        ),
+                    ],
+                    style={
+                        "width": "49%",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                    },
+                ),
+            ],
+        ),
+        html.Br(),
+        # Div for Sankey Diagram
+        html.Div(
+            [
+                html.Div(
+                    [
+                        # Dropdown for plot options
+                        html.Label("Select Plot Type:"),
+                        dcc.RadioItems(
+                            id="sankey-selector",
+                            options=[
+                                {"label": "Passengers", "value": "psg"},
+                                {"label": "Fare (Carrier Large)", "value": "fare_lg"},
+                                {"label": "Fare (Carrier Low)", "value": "fare_low"},
+                            ],
+                            value="psg",  # Default option
+                            inline=True,
+                        ),
+                    ],
+                    style={
+                        "width": "100%",
+                        "height": "33px",
+                        "display": "flex",
+                        "justify-content": "center",
+                        "align-items": "center",
+                        "border": "1px solid #D3D3D3",  # Border color and thickness
+                        "border-radius": "4px",  # Rounded corners
+                        "font-color": "lightgrey",
+                    },
+                ),
+                html.Br(),
+                dcc.Graph(id="sankey-di", style={"height": "70vh", "width": "100%"}),
+            ]
+        ),
+    ],
+)
+
+# Define the callback
+@app.callback(
+    # Outputs
+    Output("route-map", "figure"),
+    Output("box-plot", "figure"),
+    Output("sankey-di", "figure"),
+    # Inputs
+    Input("year-dropdown", "value"),
+    Input("source-city-dropdown", "value"),
+    Input("destination-city-dropdown", "value"),
+    Input("source-dest-btn", "on"),
+    Input("route-dropdown", "value"),
+    Input("sankey-selector", "value"),
+)
+def update_graph(
+    year_selected,
+    source_city_selected,
+    destination_city_selected,
+    is_dest,
+    selected_routes,
+    sankey_selector,
+):
+
+    # Default selections for filters
+    if year_selected is None or len(year_selected) == 0:
+        year_selected = df_graphs["Year"].unique()
+    if source_city_selected is None or len(source_city_selected) == 0:
+        source_city_selected = df_graphs["city1"].unique()
+    if destination_city_selected is None or len(destination_city_selected) == 0:
+        destination_city_selected = df_graphs["city2"].unique()
+
+    # Filter the data
+    df_graphs_year = df_graphs[
+        df_graphs["Year"].isin(year_selected)
+        & df_graphs["city1"].isin(source_city_selected)
+        & df_graphs["city2"].isin(destination_city_selected)
+    ]
+
+    # Group data by city and aggregate necessary fields
+    df_graphs_source = (
+        df_graphs_year.groupby(["city1", "start_lat", "start_lon"])
+        .agg(
+            {
+                "passengers": "mean",
+                "airport_1": "first",
+            }
+        )
+        .reset_index()
+    )
+
+    # Count the number of flights
+    source_flight_count = df_graphs_year["city1"].value_counts().reset_index()
+    source_flight_count.columns = ["city1", "flight_count"]
+
+    # Merge the flight count back to the aggregated data
+    df_graphs_source = df_graphs_source.merge(source_flight_count, on="city1", how="left")
+    df_graphs_source["hover_text"] = (
+        "From: "
+        + df_graphs_source["city1"]
+        + "<br>Total Flights: "
+        + df_graphs_source["flight_count"].astype(str)
+        + "<br>Avg. Passengers: "
+        + df_graphs_source["passengers"].round().astype(str)
+        + "<br>Airport: "
+        + df_graphs_source["airport_1"]
+    )
+
+    df_graphs_dest = (
+        df_graphs_year.groupby(["city2", "end_lat", "end_lon"])
+        .agg(
+            {
+                "passengers": "mean",
+                "airport_2": "first",
+            }
+        )
+        .reset_index()
+    )
+
+    dest_flight_count = df_graphs_year["city2"].value_counts().reset_index()
+    dest_flight_count.columns = ["city2", "flight_count"]
+
+    df_graphs_dest = df_graphs_dest.merge(dest_flight_count, on="city2", how="left")
+
+    df_graphs_dest["hover_text"] = (
+        "To: "
+        + df_graphs_dest["city2"]
+        + "<br>Total Flights: "
+        + df_graphs_dest["flight_count"].astype(str)
+        + "<br>Avg. Passengers: "
+        + df_graphs_dest["passengers"].round().astype(str)
+        + "<br>Airport: "
+        + df_graphs_dest["airport_2"]
+    )
+
+    unique_source_cities = df_graphs_source["city1"].unique()
+    unique_dest_cities = df_graphs_dest["city2"].unique()
+    color_scale = px.colors.qualitative.Plotly
+    source_city_colors = {
+        city: color_scale[i % len(color_scale)]
+        for i, city in enumerate(unique_source_cities)
+    }
+    dest_city_colors = {
+        city: color_scale[i % len(color_scale)]
+        for i, city in enumerate(unique_dest_cities)
+    }
+
+    # Map figure
+    map_fig = go.Figure()
+
+    if is_dest:
+        map_fig.add_trace(
+            go.Scattergeo(
+                locationmode="USA-states",
+                lon=df_graphs_dest["end_lon"],
+                lat=df_graphs_dest["end_lat"],
+                hoverinfo="text",
+                text=df_graphs_dest["hover_text"],
+                mode="markers",
+                marker=dict(
+                    size=df_graphs_dest["flight_count"],
+                    sizemode="area",
+                    sizeref=2.0 * max(df_graphs_dest["flight_count"]) / (25.0**2),
+                    color="rgba(0, 0, 0, 0)",  # Transparent fill color
+                    line=dict(
+                        color=[dest_city_colors[city] for city in df_graphs_dest["city2"]],
+                        width=2,  # Set the width of the circle outline
+                    ),
+                ),
+            )
+        )
+    else:
+        map_fig.add_trace(
+            go.Scattergeo(
+                locationmode="USA-states",
+                lon=df_graphs_source["start_lon"],
+                lat=df_graphs_source["start_lat"],
+                hoverinfo="text",
+                text=df_graphs_source["hover_text"],
+                mode="markers",
+                marker=dict(
+                    size=df_graphs_source["flight_count"],
+                    sizemode="area",
+                    sizeref=2.0 * max(df_graphs_source["flight_count"]) / (25.0**2),
+                    color=[source_city_colors[city] for city in df_graphs_source["city1"]],
+                ),
+            )
+        )
+
+        for i, row in df_graphs_year.iterrows():
+            map_fig.add_trace(
+                go.Scattergeo(
+                    locationmode="USA-states",
+                    lon=[row["start_lon"], row["end_lon"], None],
+                    lat=[row["start_lat"], row["end_lat"], None],
+                    mode="lines",
+                    line=dict(width=1, color=source_city_colors[row["city1"]]),
+                    opacity=0.5,
+                )
+            )
+
+    map_fig.update_layout(
+        title={
+            "text": "Routes Map",
+            "y": 0.95,  # Adjust y-position slightly (range from 0 to 1, where 1 is the top of the plot area)
+            "x": 0.5,  # Center title horizontally
+            "xanchor": "center",
+            "yanchor": "top",
+        },
+        showlegend=False,
+        geo=go.layout.Geo(
+            scope="north america",
+            # projection_type="azimuthal equal area",
+            showland=True,
+            landcolor="rgb(30, 30, 30)",
+            countrycolor="rgb(60, 60, 60)",
+            lakecolor="rgb(40, 40, 40)",
+            bgcolor="rgb(20, 20, 20)",
+            lonaxis=dict(range=[-130, -60]),
+            lataxis=dict(range=[20, 55]),
+        ),
+        paper_bgcolor="rgba(150, 150, 150, 0.5)",
+        font=dict(color="black"),
+        margin=dict(l=0, r=0, t=0, b=0),  # Removes extra margins
+    )
+
+    # Box Plot
+    if selected_routes is None or len(selected_routes) == 0:
+        selected_routes = (
+            df_graphs_year.groupby("route")["fare"].mean().nlargest(3).index.tolist()
+        )  # Default to top 3 if none selected
+        filtered_data = df_graphs_year[df_graphs_year["route"].isin(selected_routes)].copy()
+        box_title = "Fare Distribution of Top Route(s)"
+    else:
+        filtered_data = df_graphs[df_graphs["route"].isin(selected_routes)].copy()
+        box_title = "Fare Distribution by Selected Routes"
+
+    box_plot_fig = px.box(
+        filtered_data,
+        x="route",
+        y="fare",
+        color="route",
+        title=box_title,
+    )
+    box_plot_fig.update_layout(
+        yaxis_title="Fare ($)",
+        paper_bgcolor="rgba(150, 150, 150, 0.5)",
+        font=dict(
+            color="black",
+        ),
+        legend=dict(
+            title="Route(s)",
+            orientation="h",
+            x=0.5,
+            y=-0.1,
+            xanchor="center",
+            yanchor="middle",
+        ),
+        xaxis=dict(
+            title=None,
+            showticklabels=False,
+        ),
+        margin=dict(r=20),
+    ),
+
+    ## Sankey Diagram
+
+    # Map city names to indices
+    all_cities = list(set(df_graphs_year["city1"]).union(set(df_graphs_year["city2"])))
+    city_to_index = {city: i for i, city in enumerate(all_cities)}
+
+    # Assign colors to each city from the color_scale
+    node_colors = {
+        city: color_scale[i % len(color_scale)] for i, city in enumerate(all_cities)
+    }
+
+    # Set link colors to match source node colors
+    link_colors = [node_colors[df_graphs_year["city1"].iloc[i]] for i in range(len(df_graphs_year))]
+
+    # Define nodes and links for Sankey diagram
+    node_labels = all_cities  # Labels for the Sankey nodes (unique cities)
+
+    # Convert DataFrame into sources, targets, and values for the Sankey plot
+    sources = [city_to_index[city] for city in df_graphs_year["city1"]]
+    targets = [city_to_index[city] for city in df_graphs_year["city2"]]
     
-    # Example Graph 1
-    html.Div([
-        html.H3("Graph 1: Passenger Count Trends", style={"color": "#457b9d"}),
-        dcc.Graph(id="graph-1", figure={}),  # Replace with actual figure
-    ], className="my-4"),
-    
-    # Example Graph 2
-    html.Div([
-        html.H3("Graph 2: Average Fare Trends", style={"color": "#457b9d"}),
-        dcc.Graph(id="graph-2", figure={}),  # Replace with actual figure
-    ], className="my-4"),
-])
+    if sankey_selector == "psg":
+        values = df_graphs_year["passengers"].tolist()
+        sankey_title = "Passenger Flow Between Cities"
+    elif sankey_selector == "fare_lg":
+        values = df_graphs_year["fare_lg"].tolist()
+        sankey_title = "Fare (Large Carrier) Flow Between Cities"
+    elif sankey_selector == "fare_low":
+        values = df_graphs_year["fare_low"].value_counts().tolist()
+        sankey_title = "Fare (Large Carrier) Flow Between Cities"
+    else:
+        values = df_graphs_year["passengers"].tolist()
+        sankey_title = "Passenger Flow Between Cities"
+
+    # Define a label for the hover text based on the sankey_selector
+    hover_label = {
+        "psg": "Passengers",
+        "fare_lg": "Fare (Large Carrier)",
+        "fare_low": "Fare (Low Carrier)",
+    }.get(sankey_selector, "Passengers")  # Default to "Passengers" if no match
+
+
+
+    # Create Sankey figure
+    sankey_fig = go.Figure(
+        data=[
+            go.Sankey(
+                arrangement="snap",
+                node=dict(
+                    pad=15,
+                    thickness=20,
+                    line=dict(color="black", width=0.5),
+                    label=node_labels,  # City names
+                    color=[node_colors[city] for city in node_labels],  # Node colors
+                ),
+                link=dict(
+                    source=sources,  # Indices of source cities
+                    target=targets,  # Indices of target cities
+                    value=values,  # Number of passengers
+                    color=link_colors,  # Color of the links
+                    hovertemplate="From: %{source.label}<br />"
+                    +"To: %{target.label}<br />"
+                    + "{hover_label}: %{value}<br />"
+                ),
+            )
+        ]
+    )
+
+    sankey_fig.update_layout(
+        title_text=sankey_title,
+        font_size=12,
+    )
+
+    return map_fig, box_plot_fig, sankey_fig
+
+
+########################################################################################
 
 # Calculate unique counts and titles dynamically
 unique_counts = {
