@@ -43,5 +43,5 @@ df['Route'] = df['OriginAirportCode'] + '-' + df['DestinationAirportCode']
 # print(json.dumps(list(df.columns), indent=4))
 
 # Save the dataset in csv format and parquet format
-df.to_parquet('_dataset.parquet', index=False)
-df.to_csv('_dataset.csv', index=False)
+df.to_parquet('../datasets/_dataset.parquet', index=False)
+df.to_csv('../datasets/_dataset.csv', index=False)

@@ -2,7 +2,7 @@ import pandas as pd
 from tabulate import tabulate
 
 # Load the preprocessed dataset
-df = pd.read_parquet('_dataset.parquet')  # Adjust path if needed
+df = pd.read_parquet('../datasets/_dataset.parquet')  # Adjust path if needed
 
 # List of columns to inspect
 columns_to_check = [
