@@ -1,8 +1,27 @@
 import dash
 from dash import dcc, html, Input, Output
 import dash_bootstrap_components as dbc
+import pandas as pd
+import plotly.graph_objects as go
 
-# Initialize the Dash app with the LUX Bootstrap theme
+# Load the preprocessed dataset
+df = pd.read_parquet('datasets/_dataset.parquet')  # Adjust path if needed
+
+# Calculate unique counts for each metric
+unique_count_year = df['Year'].nunique()
+unique_count_quarter = df['Quarter'].nunique()
+unique_cities_count = len(pd.concat([df['OriginCity'], df['DestinationCity']]).unique())
+unique_count_origin_city = df['OriginCity'].nunique()
+unique_count_dest_city = df['DestinationCity'].nunique()
+unique_airports_count = len(pd.concat([df['OriginAirportCode'], df['DestinationAirportCode']]).unique())
+unique_count_origin_airport_code = df['OriginAirportCode'].nunique()
+unique_count_dest_airport_code = df['DestinationAirportCode'].nunique()
+unique_carrier_codes_count = len(pd.concat([df['LargestCarrierCode'], df['LowestFareCarrierCode']]).unique())
+unique_count_largest_carrier = df['LargestCarrierCode'].nunique()
+unique_count_lowest_fare_carrier = df['LowestFareCarrierCode'].nunique()
+unique_routes_count = df['Route'].nunique()
+
+# Initialize the Dash app with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LUX])
 app.title = "Data Analysis Dashboard"
 
@@ -79,15 +98,45 @@ graphs_layout = html.Div([
     ], className="my-4"),
 ])
 
+# Layout for Data Summary Page
+data_summary_layout = html.Div([
+    html.H1("Data Summary", className="text-center my-4", style={"color": "#1d3557"}),
+    
+    dbc.Row([
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_year, "Unique Year Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_quarter, "Unique Quarter Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_cities_count, "Unique Cities (combined OriginCity and DestinationCity)")), md=4),
+    ], className="mb-4"),
+    
+    dbc.Row([
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_origin_city, "Unique OriginCity Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_dest_city, "Unique DestinationCity Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_airports_count, "Unique Airports (combined OriginAirportCode and DestinationAirportCode)")), md=4),
+    ], className="mb-4"),
+    
+    dbc.Row([
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_origin_airport_code, "Unique OriginAirportCode Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_dest_airport_code, "Unique DestinationAirportCode Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_carrier_codes_count, "Unique Carrier Codes (combined LargestCarrierCode and LowestFareCarrierCode)")), md=4),
+    ], className="mb-4"),
+    
+    dbc.Row([
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_largest_carrier, "Unique LargestCarrierCode Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_lowest_fare_carrier, "Unique LowestFareCarrierCode Count")), md=4),
+        dbc.Col(dcc.Graph(figure=create_indicator(unique_routes_count, "Unique Routes Count")), md=4),
+    ], className="mb-4"),
+])
+
 # App Layout with Navigation
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
     
-    # Navbar with theme colors
+    # Navbar with links to Home, Graphs, and Data Summary
     dbc.NavbarSimple(
         children=[
             dbc.NavItem(dbc.NavLink("Home", href="/")),
             dbc.NavItem(dbc.NavLink("Graphs", href="/graphs")),
+            dbc.NavItem(dbc.NavLink("Data Summary", href="/data-summary")),
         ],
         brand="Data Analysis Dashboard",
         brand_href="/",
@@ -96,7 +145,7 @@ app.layout = html.Div([
         className="mb-4"
     ),
     
-    # Content container that will change based on the URL
+    # Content container that changes based on the URL
     html.Div(id="page-content")
 ])
 
@@ -105,6 +154,8 @@ app.layout = html.Div([
 def display_page(pathname):
     if pathname == "/graphs":
         return graphs_layout
+    elif pathname == "/data-summary":
+        return data_summary_layout
     else:
         return home_layout
 
