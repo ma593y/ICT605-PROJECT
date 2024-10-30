@@ -14,44 +14,71 @@ app.title = "Data Analysis Dashboard"
 
 # Layout for the Homepage
 home_layout = html.Div([
-    html.H1("Welcome to the Data Analysis Dashboard", className="text-center my-4", style={"color": "#1d3557"}),
+    html.H1("Welcome to the US Airline Data Analysis Dashboard", className="text-center my-4", style={"color": "#1d3557"}),
     
     dbc.Container([
         # Introduction Section
         html.H2("Introduction", className="my-3", style={"color": "#457b9d"}),
-        html.P("This project provides a comprehensive analysis focused on [specific case]. The case revolves around understanding key metrics, trends, and insights within the data."),
+        html.P(
+            "The airline industry is influenced by numerous factors such as fares, passenger volumes, and routes, which play a crucial role in determining business performance and customer satisfaction. "
+            "This dashboard explores key metrics from 1993 to 2024, aiming to enhance data-driven decision-making for stakeholders."
+        ),
         
         # Problem Definition Section
         html.H2("Problem Definition", className="my-3", style={"color": "#457b9d"}),
-        html.P("The central problem is to uncover patterns and trends offering insights into [central theme]. This analysis provides actionable conclusions for decision-making."),
+        html.P(
+            "The core problem centers on identifying patterns in U.S. domestic air travel to support strategic actions. By visualizing trends, routes, and fare dynamics, the dashboard will facilitate "
+            "informed decisions in pricing and route optimization, ultimately improving competitiveness and operational efficiency."
+        ),
 
         # Goal Section
         html.H2("Goal", className="my-3", style={"color": "#457b9d"}),
-        html.P("Our goal is to utilize data-driven methods to explore and validate hypotheses around the dataset, delivering clear and insightful visualizations."),
+        html.P(
+            "Our primary goal is to use interactive data visualization to provide insights into fare trends, route demands, and passenger behavior. This dashboard will help users validate hypotheses, "
+            "analyze patterns, and engage with the data for better strategic planning."
+        ),
 
         # Narrative Section
         html.H2("Narrative / Storyboard", className="my-3", style={"color": "#457b9d"}),
-        html.P("This dashboard narrates the story of the dataset, including patterns, findings, and insights. We start with general statistics, explore trends, and conclude with recommendations."),
+        html.P(
+            "The dashboard guides users through a comprehensive analysis journey. Beginning with an overview, it explores travel trends, busy routes, fare patterns, and seasonal variations. Key events, "
+            "such as the 2008 recession and COVID-19, are highlighted to show their impacts on air travel trends, leading to a final summary of actionable insights."
+        ),
 
         # Target Audience
         html.H2("Target Audience", className="my-3", style={"color": "#457b9d"}),
-        html.P("This dashboard is tailored for data analysts, business decision-makers, and stakeholders looking to derive insights from [specific dataset]."),
+        html.P(
+            "This system is designed for data analysts, business stakeholders, and industry strategists who aim to understand domestic airline performance trends, optimize pricing strategies, "
+            "and make data-informed decisions in the U.S. airline market."
+        ),
 
         # Dataset Summary
         html.H2("Dataset Summary", className="my-3", style={"color": "#457b9d"}),
-        html.P("The dataset contains information on [data description]. Key fields include [important columns], covering various dimensions and aggregates."),
+        html.P(
+            "The dataset comprises over 244,000 records with fields on cities, airports, routes, distances, fare averages, and more, spanning 1993 to 2024. Data cleaning reduced irrelevant fields, "
+            "ensuring accurate insights into market share, fare dynamics, and passenger trends."
+        ),
 
         # Analysis Summary
         html.H2("Analysis Summary", className="my-3", style={"color": "#457b9d"}),
-        html.P("Our data exploration included data cleaning, transformation, and outlier detection. Key findings reveal [summary of findings]."),
+        html.P(
+            "Key analyses included: descriptive statistics, trend analysis (examining yearly, seasonal, and event-driven trends), comparative analysis of fares by route and carrier, and "
+            "regional analysis ranking the busiest airports, cities, and routes."
+        ),
 
         # Hypothesis Section
-        html.H2("Hypothesis", className="my-3", style={"color": "#457b9d"}),
-        html.P("Our main hypothesis is that [hypothesis statement]. By analyzing [fields], we aim to validate or invalidate this hypothesis."),
+        html.H2("Hypotheses", className="my-3", style={"color": "#457b9d"}),
+        html.Ul([
+            html.Li("Fare-Distance Relationship: Fares tend to increase with route distance, though pricing strategies vary by carrier."),
+            html.Li("Seasonal Demand Effects: Passenger volume and fare pricing are higher in summer and autumn, with dips in winter."),
+            html.Li("Competitive Influence on Fares: Routes with more carriers show unexpected fare increases, potentially due to high demand or premium services."),
+        ]),
 
         # FAQs / Help Section
         html.H2("FAQs / Help", className="my-3", style={"color": "#457b9d"}),
-        html.P("For questions, refer to our FAQ section for guidance and troubleshooting tips."),
+        html.P(
+            "For questions, refer to our FAQ section for guidance and troubleshooting tips."
+        ),
     ]),
 ])
 
