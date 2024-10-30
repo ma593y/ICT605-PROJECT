@@ -3,6 +3,7 @@ from dash import dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 
 # Load the preprocessed dataset
 df = pd.read_parquet('datasets/_dataset.parquet')  # Adjust path if needed
@@ -134,6 +135,89 @@ data_summary_layout = dbc.Container([
     )
 ], fluid=True)
 
+# Helper function to generate top 10 graphs
+def generate_top_10_figures():
+    figures = []
+
+    # Top 10 Cities by Arrivals
+    top_arrival_cities = df.groupby('DestinationCity')['PassengerCount'].sum().reset_index()
+    top_arrival_cities = top_arrival_cities.sort_values(by='PassengerCount').tail(10)
+    fig5 = px.bar(top_arrival_cities, x='PassengerCount', y='DestinationCity', orientation='h',
+                  title="Top 10 Busiest Cities by Arrivals (Passenger Count)",
+                  color='PassengerCount', color_continuous_scale='Blues')
+    fig5.update_layout(title_font_size=20, xaxis_title="Passenger Count", yaxis_title="City")
+    figures.append(fig5)
+
+    # Top 10 Cities by Departures
+    top_departure_cities = df.groupby('OriginCity')['PassengerCount'].sum().reset_index()
+    top_departure_cities = top_departure_cities.sort_values(by='PassengerCount').tail(10)
+    fig6 = px.bar(top_departure_cities, x='PassengerCount', y='OriginCity', orientation='h',
+                  title="Top 10 Busiest Cities by Departures (Passenger Count)",
+                  color='PassengerCount', color_continuous_scale='Oranges')
+    fig6.update_layout(title_font_size=20, xaxis_title="Passenger Count", yaxis_title="City")
+    figures.append(fig6)
+
+    # Top 10 Airports by Arrivals
+    top_arrival_airports = df.groupby('DestinationAirportCode')['PassengerCount'].sum().reset_index()
+    top_arrival_airports = top_arrival_airports.sort_values(by='PassengerCount').tail(10)
+    fig7 = px.bar(top_arrival_airports, x='PassengerCount', y='DestinationAirportCode', orientation='h',
+                  title="Top 10 Busiest Airports by Arrivals (Passenger Count)",
+                  color='PassengerCount', color_continuous_scale='Blues')
+    fig7.update_layout(title_font_size=20, xaxis_title="Passenger Count", yaxis_title="Airport Code")
+    figures.append(fig7)
+
+    # Top 10 Airports by Departures
+    top_departure_airports = df.groupby('OriginAirportCode')['PassengerCount'].sum().reset_index()
+    top_departure_airports = top_departure_airports.sort_values(by='PassengerCount').tail(10)
+    fig8 = px.bar(top_departure_airports, x='PassengerCount', y='OriginAirportCode', orientation='h',
+                  title="Top 10 Busiest Airports by Departures (Passenger Count)",
+                  color='PassengerCount', color_continuous_scale='Oranges')
+    fig8.update_layout(title_font_size=20, xaxis_title="Passenger Count", yaxis_title="Airport Code")
+    figures.append(fig8)
+
+    # Top 10 Routes by Passenger Count
+    top_routes = df.groupby('Route')['PassengerCount'].sum().reset_index()
+    top_routes = top_routes.sort_values(by='PassengerCount').tail(10)
+    fig9 = px.bar(top_routes, x='PassengerCount', y='Route', orientation='h',
+                  title="Top 10 Busiest Routes by Passenger Count",
+                  color='PassengerCount', color_continuous_scale='Blues')
+    fig9.update_layout(title_font_size=20, xaxis_title="Passenger Count", yaxis_title="Route")
+    figures.append(fig9)
+
+    # Top 10 Longest Routes
+    unique_routes_df = df.drop_duplicates(subset=['Route'])
+    top_longest_routes = unique_routes_df.sort_values(by='RouteDistanceInMiles').tail(10)
+    fig10 = px.bar(top_longest_routes, x='RouteDistanceInMiles', y='Route', orientation='h',
+                   title="Top 10 Longest Routes by Distance (Miles)", color_discrete_sequence=['teal'])
+    fig10.update_layout(title_font_size=20, xaxis_title="Route Distance (Miles)", yaxis_title="Route")
+    figures.append(fig10)
+
+    # Top 10 Shortest Routes
+    top_shortest_routes = unique_routes_df.sort_values(by='RouteDistanceInMiles').head(10)
+    fig11 = px.bar(top_shortest_routes, x='RouteDistanceInMiles', y='Route', orientation='h',
+                   title="Top 10 Shortest Routes by Distance (Miles)", color_discrete_sequence=['salmon'])
+    fig11.update_layout(title_font_size=20, xaxis_title="Route Distance (Miles)", yaxis_title="Route")
+    figures.append(fig11)
+
+    return figures
+
+# Generate the figures for top 10 graphs
+top_10_figures = generate_top_10_figures()
+
+# Layout for Top 10 Graphs Page
+top_10_layout = html.Div([
+    html.H1("Top 10 Data Visualizations", className="text-center my-4", style={"color": "#1d3557"}),
+
+    dbc.Container([
+        dbc.Row(
+            [
+                dbc.Col([dcc.Graph(figure=fig), html.Hr(style={"border-top": "5px solid #ddd"})], md=12) for fig in top_10_figures
+            ],
+            className="g-4"
+        )
+    ])
+])
+
 # App Layout with Navigation
 app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
@@ -142,8 +226,9 @@ app.layout = html.Div([
     dbc.NavbarSimple(
         children=[
             dbc.NavItem(dbc.NavLink("Home", href="/")),
-            dbc.NavItem(dbc.NavLink("Graphs", href="/graphs")),
             dbc.NavItem(dbc.NavLink("Data Summary", href="/data-summary")),
+            dbc.NavItem(dbc.NavLink("Top 10 Graphs", href="/top-10")),
+            dbc.NavItem(dbc.NavLink("Graphs", href="/graphs")),
         ],
         brand="Data Analysis Dashboard",
         brand_href="/",
@@ -163,6 +248,8 @@ def display_page(pathname):
         return graphs_layout
     elif pathname == "/data-summary":
         return data_summary_layout
+    elif pathname == "/top-10":
+        return top_10_layout
     else:
         return home_layout
 
