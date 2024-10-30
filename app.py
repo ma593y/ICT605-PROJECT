@@ -7,31 +7,9 @@ import plotly.graph_objects as go
 # Load the preprocessed dataset
 df = pd.read_parquet('datasets/_dataset.parquet')  # Adjust path if needed
 
-# Calculate unique counts for each metric
-unique_count_year = df['Year'].nunique()
-unique_count_quarter = df['Quarter'].nunique()
-unique_cities_count = len(pd.concat([df['OriginCity'], df['DestinationCity']]).unique())
-unique_count_origin_city = df['OriginCity'].nunique()
-unique_count_dest_city = df['DestinationCity'].nunique()
-unique_airports_count = len(pd.concat([df['OriginAirportCode'], df['DestinationAirportCode']]).unique())
-unique_count_origin_airport_code = df['OriginAirportCode'].nunique()
-unique_count_dest_airport_code = df['DestinationAirportCode'].nunique()
-unique_carrier_codes_count = len(pd.concat([df['LargestCarrierCode'], df['LowestFareCarrierCode']]).unique())
-unique_count_largest_carrier = df['LargestCarrierCode'].nunique()
-unique_count_lowest_fare_carrier = df['LowestFareCarrierCode'].nunique()
-unique_routes_count = df['Route'].nunique()
-
 # Initialize the Dash app with Bootstrap styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.LUX])
 app.title = "Data Analysis Dashboard"
-
-# Helper function to create an indicator
-def create_indicator(value, title):
-    return go.Figure(go.Indicator(
-        mode="number",
-        value=value,
-        title={'text': title}
-    ))
 
 # Layout for the Homepage
 home_layout = html.Div([
@@ -98,34 +76,63 @@ graphs_layout = html.Div([
     ], className="my-4"),
 ])
 
-# Layout for Data Summary Page
-data_summary_layout = html.Div([
+# Calculate unique counts and titles dynamically
+unique_counts = {
+    "Unique Year Count": df['Year'].nunique(),
+    "Unique Quarter Count": df['Quarter'].nunique(),
+    "Unique Cities Count": len(pd.concat([df['OriginCity'], df['DestinationCity']]).unique()),
+    "Unique OriginCity Count": df['OriginCity'].nunique(),
+    "Unique DestinationCity Count": df['DestinationCity'].nunique(),
+    "Unique Airports Count": len(pd.concat([df['OriginAirportCode'], df['DestinationAirportCode']]).unique()),
+    "Unique OriginAirportCode Count": df['OriginAirportCode'].nunique(),
+    "Unique DestinationAirportCode Count": df['DestinationAirportCode'].nunique(),
+    "Unique Carrier Codes Count": len(pd.concat([df['LargestCarrierCode'], df['LowestFareCarrierCode']]).unique()),
+    "Unique LargestCarrierCode Count": df['LargestCarrierCode'].nunique(),
+    "Unique LowestFareCarrierCode Count": df['LowestFareCarrierCode'].nunique(),
+    "Unique Routes Count": df['Route'].nunique(),
+    "Total Records Count": len(df),
+    "Total Passenger Count": df['PassengerCount'].sum()
+}
+
+# Helper function to create an indicator graph with responsive height
+def create_indicator(value, title):
+    fig = go.Figure(go.Indicator(
+        mode="number",
+        value=value,
+        title={'text': title}
+    ))
+
+    # Set margins to zero to avoid extra spacing
+    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+    return fig
+
+# Helper function to create a card for each indicator with fixed height
+def create_card(title, value):
+    return dbc.Card(
+        dbc.CardBody([
+            dcc.Graph(
+                figure=create_indicator(value, title),
+                config={'displayModeBar': False},
+                style={"height": "100%", "width": "100%"}  # Ensures graph fills the card body
+            )
+        ]),
+        className="shadow-sm mb-4",
+        style={"height": "200px"}  # Fixed height for the card
+    )
+
+# Dynamic Data Summary Layout
+data_summary_layout = dbc.Container([
     html.H1("Data Summary", className="text-center my-4", style={"color": "#1d3557"}),
-    
-    dbc.Row([
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_year, "Unique Year Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_quarter, "Unique Quarter Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_cities_count, "Unique Cities (combined OriginCity and DestinationCity)")), md=4),
-    ], className="mb-4"),
-    
-    dbc.Row([
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_origin_city, "Unique OriginCity Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_dest_city, "Unique DestinationCity Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_airports_count, "Unique Airports (combined OriginAirportCode and DestinationAirportCode)")), md=4),
-    ], className="mb-4"),
-    
-    dbc.Row([
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_origin_airport_code, "Unique OriginAirportCode Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_dest_airport_code, "Unique DestinationAirportCode Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_carrier_codes_count, "Unique Carrier Codes (combined LargestCarrierCode and LowestFareCarrierCode)")), md=4),
-    ], className="mb-4"),
-    
-    dbc.Row([
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_largest_carrier, "Unique LargestCarrierCode Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_count_lowest_fare_carrier, "Unique LowestFareCarrierCode Count")), md=4),
-        dbc.Col(dcc.Graph(figure=create_indicator(unique_routes_count, "Unique Routes Count")), md=4),
-    ], className="mb-4"),
-])
+
+    # Generate cards for each unique count dynamically
+    dbc.Row(
+        [
+            dbc.Col(create_card(title, value), md=4)
+            for title, value in unique_counts.items()
+        ],
+        className="mb-4"
+    )
+], fluid=True)
 
 # App Layout with Navigation
 app.layout = html.Div([
