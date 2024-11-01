@@ -9,7 +9,6 @@ Follow the instructions below to set up and run the application on your local ma
 2. [Installation](#installation)
 3. [Running the App](#running-the-app)
 4. [Folder Structure](#folder-structure)
-5. [License](#license)
 
 ## Requirements
 
