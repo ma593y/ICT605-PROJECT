@@ -18,7 +18,7 @@ This repository contains a Dash application for [briefly describe the purpose, e
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/ma593y/ICT605-PROJECT.git
+    git clone --branch submission https://github.com/ma593y/ICT605-PROJECT.git
     cd ICT605-PROJECT
     ```
 
