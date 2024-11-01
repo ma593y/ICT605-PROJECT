@@ -54,7 +54,3 @@ This repository contains a Dash application for [briefly describe the purpose, e
 - **files/**: Stores additional files related to the project.
 - **requirements.txt**: Python dependencies for the project.
 - **README.md**: Main documentation file.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
